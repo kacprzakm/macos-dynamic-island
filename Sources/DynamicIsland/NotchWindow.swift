@@ -11,7 +11,7 @@ final class NotchWindow: NSPanel {
     private let expandedSize = NSSize(width: 306, height: 242)
     private let collapseDelay: TimeInterval = 0.3
 
-    init() {
+    init(spotify: SpotifyController) {
         let screen = NotchWindow.targetScreen()
         super.init(
             contentRect: NSRect(origin: .zero, size: NotchWindow.collapsedSize(for: screen)),
@@ -29,7 +29,7 @@ final class NotchWindow: NSPanel {
         isMovableByWindowBackground = false
         hidesOnDeactivate = false
 
-        let root = IslandView(model: model)
+        let root = IslandView(spotify: spotify, model: model)
         contentView = NSHostingView(rootView: root)
 
         model.$isExpanded

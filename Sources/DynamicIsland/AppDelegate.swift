@@ -2,9 +2,10 @@ import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var notchWindow: NotchWindow?
+    private let spotify = SpotifyController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let window = NotchWindow()
+        let window = NotchWindow(spotify: spotify)
         window.orderFrontRegardless()
         notchWindow = window
 
