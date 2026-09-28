@@ -1,6 +1,8 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct IslandView: View {
+    @ObservedObject var shelf: FileShelfStore
     @ObservedObject var spotify: SpotifyController
     @ObservedObject var model: IslandModel
 
@@ -15,26 +17,50 @@ struct IslandView: View {
                     .padding(.top, model.notchHeight + 6)
                     .padding(.bottom, 14)
                     .transition(.opacity)
+            } else {
+                collapsedContent
+                    .transition(.opacity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onDrop(of: [.fileURL], isTargeted: dropBinding) { providers in
+            handleDrop(providers)
+        }
     }
 
     private var islandShape: some View {
-        UnevenRoundedRectangle(
+        let shape = UnevenRoundedRectangle(
             topLeadingRadius: 0,
             bottomLeadingRadius: cornerRadius,
             bottomTrailingRadius: cornerRadius,
             topTrailingRadius: 0,
             style: .continuous
         )
-        .fill(.black)
+        return shape
+            .fill(.black)
+            .overlay(
+                shape.strokeBorder(model.isDropTargeted ? Color.accentColor : .clear, lineWidth: 2)
+            )
+    }
+
+    private var collapsedContent: some View {
+        HStack(spacing: 0) {
+            if !shelf.items.isEmpty {
+                Spacer()
+                Label("\(shelf.items.count)", systemImage: "tray.full")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+        }
+        .padding(.horizontal, 10)
+        .frame(maxHeight: .infinity)
     }
 
     private var expandedContent: some View {
         VStack(spacing: 10) {
             spotifySection
-            Spacer(minLength: 0)
+            Divider().overlay(Color.white.opacity(0.2))
+            shelfSection
         }
     }
 
@@ -87,5 +113,78 @@ struct IslandView: View {
         .buttonStyle(.plain)
         .disabled(!spotify.isRunning)
         .opacity(spotify.isRunning ? 1 : 0.4)
+    }
+
+    private var shelfSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Shelf")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.7))
+                Spacer()
+                if !shelf.items.isEmpty {
+                    Button("Clear") { shelf.clear() }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            }
+
+            if shelf.items.isEmpty {
+                Text("Drop files here")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(shelf.items) { item in
+                            shelfRow(item)
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func shelfRow(_ item: ShelfItem) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "doc.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(.white.opacity(0.8))
+            Text(item.name)
+                .font(.system(size: 12))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+            Spacer()
+            Button {
+                shelf.remove(item)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(Color.white.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .onDrag { NSItemProvider(object: item.url as NSURL) }
+    }
+
+    private var dropBinding: Binding<Bool> {
+        Binding(get: { model.isDropTargeted }, set: { model.isDropTargeted = $0 })
+    }
+
+    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
+        for provider in providers {
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                guard let url else { return }
+                DispatchQueue.main.async { shelf.add(url) }
+            }
+        }
+        return true
     }
 }

@@ -11,7 +11,7 @@ final class NotchWindow: NSPanel {
     private let expandedSize = NSSize(width: 306, height: 242)
     private let collapseDelay: TimeInterval = 0.3
 
-    init(spotify: SpotifyController) {
+    init(shelf: FileShelfStore, spotify: SpotifyController) {
         let screen = NotchWindow.targetScreen()
         super.init(
             contentRect: NSRect(origin: .zero, size: NotchWindow.collapsedSize(for: screen)),
@@ -29,7 +29,7 @@ final class NotchWindow: NSPanel {
         isMovableByWindowBackground = false
         hidesOnDeactivate = false
 
-        let root = IslandView(spotify: spotify, model: model)
+        let root = IslandView(shelf: shelf, spotify: spotify, model: model)
         contentView = NSHostingView(rootView: root)
 
         model.$isExpanded
@@ -66,7 +66,7 @@ final class NotchWindow: NSPanel {
 
         if model.isExpanded {
             let zone = frame(expanded: true, on: screen).insetBy(dx: -8, dy: -8)
-            if zone.contains(mouse) {
+            if zone.contains(mouse) || model.isDropTargeted {
                 outsideSince = nil
             } else if let since = outsideSince {
                 if Date().timeIntervalSince(since) >= collapseDelay { setExpanded(false) }
