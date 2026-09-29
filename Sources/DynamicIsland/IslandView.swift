@@ -45,7 +45,11 @@ struct IslandView: View {
 
     private var collapsedContent: some View {
         HStack(spacing: 0) {
-            if !shelf.items.isEmpty {
+            if spotify.isPlaying {
+                artwork(size: 22, radius: 6)
+                Spacer()
+                WaveformView(isPlaying: spotify.isPlaying)
+            } else if !shelf.items.isEmpty {
                 Spacer()
                 Label("\(shelf.items.count)", systemImage: "tray.full")
                     .font(.system(size: 11, weight: .semibold))
@@ -186,5 +190,25 @@ struct IslandView: View {
             }
         }
         return true
+    }
+}
+
+struct WaveformView: View {
+    var isPlaying: Bool
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !isPlaying)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 2) {
+                ForEach(0..<4, id: \.self) { i in
+                    let phase = abs(sin(t * (3.0 + Double(i) * 0.9) + Double(i)))
+                    let level = isPlaying ? 0.3 + 0.7 * phase : 0.3
+                    Capsule()
+                        .fill(Color.white)
+                        .frame(width: 3, height: 16 * level)
+                }
+            }
+            .frame(height: 16)
+        }
     }
 }

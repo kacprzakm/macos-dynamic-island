@@ -10,6 +10,8 @@ final class NotchWindow: NSPanel {
 
     private let expandedSize = NSSize(width: 306, height: 242)
     private let collapseDelay: TimeInterval = 0.3
+    private let wingWidth: CGFloat = 36
+    private var showsLiveActivity = false
 
     init(shelf: FileShelfStore, spotify: SpotifyController) {
         let screen = NotchWindow.targetScreen()
@@ -36,6 +38,15 @@ final class NotchWindow: NSPanel {
             .removeDuplicates()
             .sink { [weak self] expanded in
                 self?.apply(expanded: expanded, animated: true)
+            }
+            .store(in: &cancellables)
+
+        spotify.$isPlaying
+            .removeDuplicates()
+            .sink { [weak self] playing in
+                guard let self else { return }
+                self.showsLiveActivity = playing
+                if !self.model.isExpanded { self.apply(expanded: false, animated: true) }
             }
             .store(in: &cancellables)
 
@@ -87,7 +98,8 @@ final class NotchWindow: NSPanel {
     }
 
     private func frame(expanded: Bool, on screen: NSScreen) -> NSRect {
-        let size = expanded ? expandedSize : NotchWindow.collapsedSize(for: screen)
+        var size = expanded ? expandedSize : NotchWindow.collapsedSize(for: screen)
+        if !expanded && showsLiveActivity { size.width += wingWidth * 2 }
         let origin = NSPoint(
             x: screen.frame.midX - size.width / 2,
             y: screen.frame.maxY - size.height
