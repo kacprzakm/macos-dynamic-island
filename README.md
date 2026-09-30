@@ -8,18 +8,21 @@ When music is playing it shows the cover and a little waveform next to the notch
 
 Made it because I wanted this on my Mac and didn't want to pay for an app.
 
-## Run
+## Install
 
 ```
-swift run DynamicIsland
+./scripts/bundle.sh --open
 ```
+
+Builds the app, puts it in /Applications and opens it. It starts by itself after login
+(you can turn that off in the app menu > Launch at Login).
 
 Needs macOS 13+. No Xcode project, it's just a Swift package.
 
-There's no dock icon so to close it:
+For quick testing without installing:
 
 ```
-pkill DynamicIsland
+swift run DynamicIsland
 ```
 
 ## Notes
